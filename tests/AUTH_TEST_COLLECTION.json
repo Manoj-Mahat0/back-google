@@ -1,0 +1,298 @@
+{
+  "info": {
+    "name": "Indoor Navigation - Auth Testing",
+    "description": "Test collection for user and admin authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Register Regular User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"user123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/register",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "register"]
+        },
+        "description": "Register a new regular user (is_admin: false by default)"
+      },
+      "response": []
+    },
+    {
+      "name": "2. Register Admin User (Will Need DB Update)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/register",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "register"]
+        },
+        "description": "Register admin user. After this, run: python create_admin.py to make them admin"
+      },
+      "response": []
+    },
+    {
+      "name": "3. Login - Admin User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('admin_token', jsonData.access_token);",
+              "    console.log('Admin token saved:', jsonData.access_token);",
+              "    console.log('User info:', JSON.stringify(jsonData.user));",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Login as admin user. Token will be saved automatically."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Login - Regular User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('user_token', jsonData.access_token);",
+              "    console.log('User token saved:', jsonData.access_token);",
+              "    console.log('User info:', JSON.stringify(jsonData.user));",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"user123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Login as regular user. Token will be saved automatically."
+      },
+      "response": []
+    },
+    {
+      "name": "5. Get Current User - Admin",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/me",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "me"]
+        },
+        "description": "Get current user info using admin token. Should show is_admin: true"
+      },
+      "response": []
+    },
+    {
+      "name": "6. Get Current User - Regular User",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{user_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/me",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "me"]
+        },
+        "description": "Get current user info using regular user token. Should show is_admin: false"
+      },
+      "response": []
+    },
+    {
+      "name": "7. Admin Endpoint - With Admin Token (Success)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/admin/analytics/buildings",
+          "host": ["{{base_url}}"],
+          "path": ["admin", "analytics", "buildings"]
+        },
+        "description": "Access admin endpoint with admin token. Should return analytics data."
+      },
+      "response": []
+    },
+    {
+      "name": "8. Admin Endpoint - With User Token (Forbidden)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{user_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/admin/analytics/buildings",
+          "host": ["{{base_url}}"],
+          "path": ["admin", "analytics", "buildings"]
+        },
+        "description": "Try to access admin endpoint with regular user token. Should return 403 Forbidden."
+      },
+      "response": []
+    },
+    {
+      "name": "9. Get Buildings - Admin Token",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/buildings/",
+          "host": ["{{base_url}}"],
+          "path": ["buildings", ""]
+        },
+        "description": "Get buildings list with admin token. Should work."
+      },
+      "response": []
+    },
+    {
+      "name": "10. Get Buildings - User Token",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{user_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/buildings/",
+          "host": ["{{base_url}}"],
+          "path": ["buildings", ""]
+        },
+        "description": "Get buildings list with regular user token. Should work (users can view buildings)."
+      },
+      "response": []
+    },
+    {
+      "name": "11. Login - Old OAuth2 Endpoint (Backward Compatibility)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "username",
+              "value": "admin",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "admin123",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/token",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "token"]
+        },
+        "description": "Old OAuth2 token endpoint (form data). Still works for backward compatibility."
+      },
+      "response": []
+    }
+  ]
+}

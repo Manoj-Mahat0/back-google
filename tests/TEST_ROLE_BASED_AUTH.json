@@ -1,0 +1,146 @@
+{
+  "register_user": {
+    "url": "http://localhost:8000/auth/register",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "username": "testuser",
+      "email": "testuser@example.com",
+      "password": "user123",
+      "role": "user"
+    },
+    "expected_response": {
+      "username": "testuser",
+      "email": "testuser@example.com",
+      "is_admin": false,
+      "role": "user",
+      "created_at": "2024-01-11T10:30:00.000000",
+      "id": "65a1234567890abcdef12345"
+    }
+  },
+  "register_admin": {
+    "url": "http://localhost:8000/auth/register",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "username": "admin",
+      "email": "admin@example.com",
+      "password": "admin123",
+      "role": "admin"
+    },
+    "expected_response": {
+      "username": "admin",
+      "email": "admin@example.com",
+      "is_admin": true,
+      "role": "admin",
+      "created_at": "2024-01-11T10:30:00.000000",
+      "id": "65a1234567890abcdef67890"
+    }
+  },
+  "login_user": {
+    "url": "http://localhost:8000/auth/login",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "username": "testuser",
+      "password": "user123"
+    },
+    "expected_response": {
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "token_type": "bearer",
+      "user": {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "is_admin": false,
+        "role": "user",
+        "created_at": "2024-01-11T10:30:00.000000",
+        "id": "65a1234567890abcdef12345"
+      }
+    },
+    "flutter_behavior": "Navigate to /home"
+  },
+  "login_admin": {
+    "url": "http://localhost:8000/auth/login",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "username": "admin",
+      "password": "admin123"
+    },
+    "expected_response": {
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "token_type": "bearer",
+      "user": {
+        "username": "admin",
+        "email": "admin@example.com",
+        "is_admin": true,
+        "role": "admin",
+        "created_at": "2024-01-11T10:30:00.000000",
+        "id": "65a1234567890abcdef67890"
+      }
+    },
+    "flutter_behavior": "Navigate to /admin",
+    "admin_web_behavior": "Allow access to dashboard"
+  },
+  "get_current_user": {
+    "url": "http://localhost:8000/auth/me",
+    "method": "GET",
+    "headers": {
+      "Authorization": "Bearer YOUR_TOKEN_HERE"
+    },
+    "expected_response": {
+      "username": "admin",
+      "email": "admin@example.com",
+      "is_admin": true,
+      "role": "admin",
+      "created_at": "2024-01-11T10:30:00.000000",
+      "id": "65a1234567890abcdef67890"
+    }
+  },
+  "curl_examples": {
+    "register_user": "curl -X POST http://localhost:8000/auth/register -H \"Content-Type: application/json\" -d '{\"username\": \"testuser\", \"email\": \"testuser@example.com\", \"password\": \"user123\", \"role\": \"user\"}'",
+    "register_admin": "curl -X POST http://localhost:8000/auth/register -H \"Content-Type: application/json\" -d '{\"username\": \"admin\", \"email\": \"admin@example.com\", \"password\": \"admin123\", \"role\": \"admin\"}'",
+    "login_user": "curl -X POST http://localhost:8000/auth/login -H \"Content-Type: application/json\" -d '{\"username\": \"testuser\", \"password\": \"user123\"}'",
+    "login_admin": "curl -X POST http://localhost:8000/auth/login -H \"Content-Type: application/json\" -d '{\"username\": \"admin\", \"password\": \"admin123\"}'",
+    "get_current_user": "curl -X GET http://localhost:8000/auth/me -H \"Authorization: Bearer YOUR_TOKEN\""
+  },
+  "test_sequence": [
+    {
+      "step": 1,
+      "action": "Register regular user",
+      "request": "POST /auth/register with role='user'",
+      "verify": "is_admin=false, role='user'"
+    },
+    {
+      "step": 2,
+      "action": "Register admin user",
+      "request": "POST /auth/register with role='admin'",
+      "verify": "is_admin=true, role='admin'"
+    },
+    {
+      "step": 3,
+      "action": "Login as regular user",
+      "request": "POST /auth/login",
+      "verify": "Response includes role='user'"
+    },
+    {
+      "step": 4,
+      "action": "Login as admin",
+      "request": "POST /auth/login",
+      "verify": "Response includes role='admin'"
+    },
+    {
+      "step": 5,
+      "action": "Test Flutter routing",
+      "verify": "Admin goes to /admin, User goes to /home"
+    }
+  ]
+}
