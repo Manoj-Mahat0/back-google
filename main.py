@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 import uvicorn
+import os
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 
@@ -24,20 +25,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# MongoDB connection
-MONGODB_URL = "mongodb+srv://manojmahato08779_db_user:ucPCrRk3FwAwwocz@cluster0.2s8wyva.mongodb.net/?appName=Cluster0"
+# MongoDB connection - use environment variable or fallback to hardcoded
+MONGODB_URL = os.getenv(
+    "DATABASE_URL",
+    "mongodb+srv://manojmahato08779_db_user:ucPCrRk3FwAwwocz@cluster0.2s8wyva.mongodb.net/?appName=Cluster0"
+)
 
 @app.on_event("startup")
 async def startup_event():
-    # Initialize MongoDB connection
-    client = AsyncIOMotorClient(MONGODB_URL)
-    database = client.indoor_navigation
-    
-    # Initialize beanie with the models
-    await init_beanie(
-        database=database,
-        document_models=[User, Building, Floor, Room, Waypoint, NavigationPath, ARMarker, BuildingGraph, IndoorGraph]
-    )
+    try:
+        # Initialize MongoDB connection
+        client = AsyncIOMotorClient(MONGODB_URL)
+        database = client.indoor_navigation
+        
+        # Initialize beanie with the models
+        await init_beanie(
+            database=database,
+            document_models=[User, Building, Floor, Room, Waypoint, NavigationPath, ARMarker, BuildingGraph, IndoorGraph]
+        )
+        print("✅ Database connected successfully")
+    except Exception as e:
+        print(f"⚠️ Database connection failed: {e}")
+        print("⚠️ App will continue but database operations will fail")
+
+# Health check endpoint (must be before other routes for priority)
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "message": "Indoor Navigation API is running"}
+
+@app.get("/")
+async def root():
+    return {"message": "Indoor Navigation API", "version": "1.0.0", "status": "online"}
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])
@@ -48,13 +66,7 @@ app.include_router(offline.router, prefix="/offline", tags=["offline"])
 app.include_router(indoor_graph.router, prefix="/indoor", tags=["indoor-navigation"])
 app.include_router(ai_assistant.router, prefix="/ai", tags=["ai-assistant"])
 
-@app.get("/")
-async def root():
-    return {"message": "Indoor Navigation API", "version": "1.0.0"}
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
+# This block is not used on Render, but useful for local development
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
